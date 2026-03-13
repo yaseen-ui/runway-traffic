@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flight Runway Scheduler</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: #f5f7fb;
+      color: #1f2a44;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .refresh {
+      background: #1f6feb;
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: #5b6b82;
+    }
+
+    .card {
+      background: #fff;
+      padding: 16px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(31, 42, 68, 0.08);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid #e4e9f2;
+    }
+
+    th {
+      background: #f0f4ff;
+      font-weight: 600;
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+    }
+
+    .status-waiting {
+      background: #fff4cc;
+      color: #8a6d00;
+    }
+
+    .status-processing {
+      background: #d7ecff;
+      color: #195aa6;
+    }
+
+    .status-completed {
+      background: #dff7e9;
+      color: #1f6f4a;
+    }
+
+    .status-disabled {
+      background: #ffe0e0;
+      color: #b00020;
+    }
+
+    .status-busy {
+      background: #fde1ff;
+      color: #6a1375;
+    }
+
+    .status-idle {
+      background: #e6f5ff;
+      color: #0a4b78;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccd4e0;
+    }
+
+    .form-actions {
+      grid-column: span 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .submit {
+      background: #1f6feb;
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .message {
+      font-size: 13px;
+      color: #1f6feb;
+    }
+
+    .full-width {
+      grid-column: span 2;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Flight Runway Scheduler</h1>
+      <p>Live snapshot of flight queue and runway activity.</p>
+    </div>
+    <button class="refresh" id="refreshButton">Refresh</button>
+  </header>
+
+  <section class="stats-grid" id="statsGrid"></section>
+
+  <section class="grid">
+    <div class="card">
+      <h2>Runways</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Status</th>
+            <th>Current Flight</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="runwayTableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Create Flight</h2>
+      <form id="flightForm">
+        <div>
+          <label for="flightNumber">Flight Number</label>
+          <input id="flightNumber" name="flightNumber" value="AI203" required />
+        </div>
+        <div>
+          <label for="airline">Airline</label>
+          <input id="airline" name="airline" value="Air India" required />
+        </div>
+        <div>
+          <label for="type">Type</label>
+          <select id="type" name="type">
+            <option value="landing">Landing</option>
+            <option value="takeoff">Takeoff</option>
+          </select>
+        </div>
+        <div>
+          <label for="emergency">Emergency</label>
+          <select id="emergency" name="emergency">
+            <option value="false">No</option>
+            <option value="true">Yes</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <span class="message" id="formMessage"></span>
+          <button class="submit" type="submit">Send Request</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Flights</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Flight</th>
+          <th>Airline</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Emergency</th>
+          <th>Runway</th>
+          <th>Scheduled</th>
+          <th>Completed</th>
+        </tr>
+      </thead>
+      <tbody id="flightTableBody"></tbody>
+    </table>
+  </section>
+
+  <script>
+    const flightTableBody = document.getElementById('flightTableBody');
+    const runwayTableBody = document.getElementById('runwayTableBody');
+    const statsGrid = document.getElementById('statsGrid');
+    const refreshButton = document.getElementById('refreshButton');
+    const form = document.getElementById('flightForm');
+    const formMessage = document.getElementById('formMessage');
+
+    const formatTimestamp = value => value ? new Date(value).toLocaleTimeString() : '--';
+
+    const statusPill = (status, prefix = 'status') => {
+      const span = document.createElement('span');
+      span.className = `status-pill ${prefix}-${status}`;
+      span.textContent = status;
+      return span;
+    };
+
+    const renderStats = stats => {
+      if (!stats) {
+        return;
+      }
+
+      const cards = [
+        { label: 'Total Flights', value: stats.totalFlights },
+        { label: 'Flights Waiting', value: stats.waitingFlights },
+        { label: 'Flights Processing', value: stats.processingFlights },
+        { label: 'Flights Completed', value: stats.completedFlights },
+        { label: 'Runways Busy', value: stats.runways.busy },
+        { label: 'Runways Idle', value: stats.runways.idle },
+        { label: 'Runways Disabled', value: stats.runways.disabled },
+      ];
+
+      statsGrid.innerHTML = '';
+      cards.forEach(card => {
+        const element = document.createElement('div');
+        element.className = 'card';
+        element.innerHTML = `
+          <div class="stat-value">${card.value}</div>
+          <div class="stat-label">${card.label}</div>
+        `;
+        statsGrid.appendChild(element);
+      });
+    };
+
+    const renderFlights = flights => {
+      flightTableBody.innerHTML = '';
+      flights.forEach(flight => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${flight.id}</td>
+          <td>${flight.flightNumber}</td>
+          <td>${flight.airline}</td>
+          <td>${flight.type}</td>
+          <td></td>
+          <td>${flight.emergency ? 'Yes' : 'No'}</td>
+          <td>${flight.runwayId || '--'}</td>
+          <td>${formatTimestamp(flight.scheduledAt)}</td>
+          <td>${formatTimestamp(flight.completedAt)}</td>
+        `;
+
+        const statusCell = row.querySelector('td:nth-child(5)');
+        statusCell.appendChild(statusPill(flight.status));
+
+        flightTableBody.appendChild(row);
+      });
+    };
+
+    const renderRunways = runways => {
+      runwayTableBody.innerHTML = '';
+      runways.forEach(runway => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${runway.id}</td>
+          <td></td>
+          <td>${runway.currentFlightId || '--'}</td>
+          <td>
+            <button class="submit" data-runway-action="${runway.status === 'disabled' ? 'enable' : 'disable'}" data-runway-id="${runway.id}">
+              ${runway.status === 'disabled' ? 'Enable' : 'Disable'}
+            </button>
+          </td>
+        `;
+
+        const statusCell = row.querySelector('td:nth-child(2)');
+        statusCell.appendChild(statusPill(runway.status, 'status'));
+
+        runwayTableBody.appendChild(row);
+      });
+    };
+
+    const fetchData = async () => {
+      try {
+        const [flightsResponse, runwaysResponse, statsResponse] = await Promise.all([
+          fetch('/flights'),
+          fetch('/runways'),
+          fetch('/stats'),
+        ]);
+
+        const flights = await flightsResponse.json();
+        const runways = await runwaysResponse.json();
+        const stats = await statsResponse.json();
+
+        renderFlights(flights);
+        renderRunways(runways);
+        renderStats(stats);
+      } catch (error) {
+        formMessage.textContent = 'Failed to refresh data.';
+      }
+    };
+
+    const setRunwayState = async (runwayId, action) => {
+      try {
+        const response = await fetch(`/runways/${runwayId}/${action}`, { method: 'POST' });
+        if (!response.ok) {
+          const errorData = await response.json();
+          formMessage.textContent = errorData.error || 'Failed to update runway.';
+        } else {
+          formMessage.textContent = `Runway ${runwayId} ${action}d.`;
+          await fetchData();
+        }
+      } catch (error) {
+        formMessage.textContent = 'Failed to update runway.';
+      }
+    };
+
+    runwayTableBody.addEventListener('click', event => {
+      const button = event.target.closest('button[data-runway-action]');
+      if (!button) {
+        return;
+      }
+
+      const runwayId = button.dataset.runwayId;
+      const action = button.dataset.runwayAction;
+      setRunwayState(runwayId, action);
+    });
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      formMessage.textContent = '';
+
+      const payload = {
+        flightNumber: document.getElementById('flightNumber').value,
+        airline: document.getElementById('airline').value,
+        type: document.getElementById('type').value,
+        emergency: document.getElementById('emergency').value === 'true',
+      };
+
+      try {
+        const response = await fetch('/flights', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          formMessage.textContent = errorData.error || 'Failed to create flight.';
+        } else {
+          formMessage.textContent = 'Flight queued successfully.';
+          await fetchData();
+        }
+      } catch (error) {
+        formMessage.textContent = 'Failed to create flight.';
+      }
+    });
+
+    refreshButton.addEventListener('click', fetchData);
+
+    fetchData();
+    setInterval(fetchData, 5000);
+  </script>
+</body>
+</html>
