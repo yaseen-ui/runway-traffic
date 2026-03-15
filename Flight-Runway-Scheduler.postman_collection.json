@@ -1,0 +1,302 @@
+{
+  "info": {
+    "_postman_id": "flight-runway-scheduler-001",
+    "name": "Flight Runway Scheduler API",
+    "description": "API collection for the Flight Runway Scheduling System (TypeScript + Event-Driven).\n\n## Architecture\n- Event-driven scheduler using Node.js EventEmitter\n- Pluggable scheduling strategies (FIFO, EmergencyFirst, LandingPriority, Balanced)\n- Services emit events: flight:created, flight:updated, flight:cancelled, runway:released, runway:enabled/disabled\n- Scheduler listens to events and auto-assigns flights to available runways\n\n## Logging\nServer logs show: [flight queued], [scheduler triggered], [runway assigned], [flight completed], etc.\n\n## Endpoints (unchanged from v1)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Flights",
+      "description": "Flight management endpoints",
+      "item": [
+        {
+          "name": "Create Flight",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flightNumber\": \"AI203\",\n  \"airline\": \"Air India\",\n  \"type\": \"landing\",\n  \"emergency\": false\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/flights",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["flights"]
+            },
+            "description": "Create a new flight request. Type can be 'landing' or 'takeoff'. Emergency is optional (defaults to false)."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Emergency Flight",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flightNumber\": \"EMRG01\",\n  \"airline\": \"Emergency Services\",\n  \"type\": \"landing\",\n  \"emergency\": true\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/flights",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["flights"]
+            },
+            "description": "Create an emergency flight that gets priority in the queue."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Flights",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/flights",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["flights"]
+            },
+            "description": "Retrieve all flights in the system with their current status."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Flight by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/flights/:id",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["flights", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Flight ID"
+                }
+              ]
+            },
+            "description": "Get details of a specific flight by its ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Flight",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flightNumber\": \"AI203\",\n  \"airline\": \"Air India Updated\",\n  \"type\": \"takeoff\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/flights/:id",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["flights", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Flight ID to update"
+                }
+              ]
+            },
+            "description": "Update flight details. Only waiting flights can be updated."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Flight",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/flights/:id",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["flights", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Flight ID to delete"
+                }
+              ]
+            },
+            "description": "Delete a flight from the queue. Only waiting flights can be deleted."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Queue",
+      "description": "Queue management endpoints",
+      "item": [
+        {
+          "name": "Get Queue",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/queue",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["queue"]
+            },
+            "description": "Get all flights currently waiting in the queue."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Runways",
+      "description": "Runway management endpoints",
+      "item": [
+        {
+          "name": "Get All Runways",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/runways",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["runways"]
+            },
+            "description": "Get status of all runways."
+          },
+          "response": []
+        },
+        {
+          "name": "Disable Runway",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/runways/:id/disable",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["runways", ":id", "disable"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Runway ID to disable"
+                }
+              ]
+            },
+            "description": "Disable a runway for maintenance. No new flights will be assigned."
+          },
+          "response": []
+        },
+        {
+          "name": "Enable Runway",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/runways/:id/enable",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["runways", ":id", "enable"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Runway ID to enable"
+                }
+              ]
+            },
+            "description": "Re-enable a runway after maintenance."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Statistics",
+      "description": "System statistics endpoints",
+      "item": [
+        {
+          "name": "Get System Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/stats",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["stats"]
+            },
+            "description": "Get comprehensive system statistics including flight counts and runway status."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "UI",
+      "description": "User interface",
+      "item": [
+        {
+          "name": "Get Web UI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": [""]
+            },
+            "description": "Get the web UI for the flight scheduler."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}
